@@ -3,14 +3,12 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-var scriptDir string
+// ScriptDir represents the configured script directory containing app scripts
+var ScriptDir string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -19,35 +17,10 @@ var rootCmd = &cobra.Command{
 	Long: `This command can be included as the entrypoint of an OCI (e.g. Docker) container in order to allow the user ` +
 		`to call multiple entrypoint scripts inside of the container. When called without an app, it lists all of the ` +
 		`available apps.`,
+	TraverseChildren: true,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if len(args) > 0 {
-			app := args[0]
-			appPath := scriptDir + "/" + app + ".sh"
-			err := runCommand(appPath, args[1:]...)
-			if err != nil {
-				os.Exit(1)
-			}
-			os.Exit(0)
-		}
-
-		fmt.Println("Available apps:")
-
-		err := filepath.Walk(scriptDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			filename := info.Name()
-			ext := filepath.Ext(filename)
-			if ext == ".sh" {
-				appName := strings.TrimSuffix(filename, ext)
-				fmt.Println(appName)
-			}
-			return nil
-		})
-		if err != nil {
-			panic(err)
-		}
+		cmd.Help()
+		os.Exit(0)
 	},
 }
 
@@ -61,14 +34,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&scriptDir, "scriptDir", "s", "", "Directory containing entry scripts")
+	rootCmd.PersistentFlags().StringVarP(&ScriptDir, "scriptDir", "s", "", "Directory containing entry scripts")
 	rootCmd.MarkPersistentFlagRequired("scriptDir")
-}
-
-func runCommand(name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
